@@ -1,1 +1,4 @@
 NumPy
+Flask
+requests
+Flask-RESTful
