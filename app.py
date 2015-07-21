@@ -1,6 +1,7 @@
 from flask import Flask, Response
 import json
 from random import randint
+from kmeans import get_heatmap_data
 try:
     from flask.ext.cors import CORS, cross_origin  # The typical way to import flask-cors
 except ImportError:
@@ -23,12 +24,16 @@ def dummy():
     minY = 60
 
     data = []
-    for _ in range(50):
-        xval = randint(minX, maxX)
-        yval = randint(minY, maxY)
-        valval = randint(0, 100)
-        point = {'x': xval, 'y': yval, 'value': valval}
-        data.append(point)
+    # Manually generate data randomly
+    # for _ in range(50):
+    #     xval = randint(minX, maxX)
+    #     yval = randint(minY, maxY)
+    #     valval = randint(0, 100)
+    #     point = {'x': xval, 'y': yval, 'value': valval}
+    #     data.append(point)
+
+    # Pull heatmap data from kmeans
+    data = get_heatmap_data()
 
 
     res = Response(json.dumps(data), mimetype='application/json')
