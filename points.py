@@ -51,8 +51,6 @@ def dataset_generator(write_file_name, total_points):
         clicks_data_file.write(str(data) + '\n')
 
     clicks_data_file.close()
-
-
     #afterwards, write data in creatives, line by line, into clicks_data.txt
 
 if __name__ == '__main__':
