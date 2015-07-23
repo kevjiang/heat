@@ -13,7 +13,7 @@ NUM_POINTS = 4000
 NUM_CLUSTERS = 32
 K_CONST = int(ceil(sqrt(NUM_POINTS/2)))
 # K_CONST = 5
-NUM_ITER = 750
+NUM_ITER = 100
 num_iter_counter = 0
 MINIT = 'points'
 
@@ -135,7 +135,7 @@ def get_heatmap_data():
     print "Total # Tries: " + str(num_tries)
     print "K: " + str(K_CONST)
 
-    plot_points2(points, centroid, label)
+    # plot_points2(points, centroid, label)
     return heatmap_data_converter(points, centroid, label)
 
 def farthest_distance(list_of_points, anchor):
@@ -151,6 +151,10 @@ def farthest_distance(list_of_points, anchor):
 
 
 def average_distance(list_of_points, anchor):
+    if len(list_of_points) == 0:
+        print '0 array in average_distance function'
+        return 0
+
     total_distance = 0
     a = np.array(anchor)
 
@@ -161,9 +165,44 @@ def average_distance(list_of_points, anchor):
     avg_distance = total_distance/len(list_of_points)
     return int(avg_distance)
 
+def find_distance(x, y):
+    return np.linalg.norm(np.array(x) - np.array(y))
+
+
+def sigma(points, label, anchor, cluster_num):
+    list_of_points = []
+
+    for i, (x, y) in enumerate(points):
+        if label[i] == cluster_num:
+            list_of_points.append(np.array((x, y)))
+
+    return average_distance(list_of_points, anchor)
+
+# calculates the Davies-Bouldin Index for a clustering
+# the Davies-Bouldin Index evaluates intra-cluster similarity and inter-cluster differences
+def db_index(points, centroid, label):
+    num_clusters = len(centroid)
+    running_sum = 0
+
+    for i, ci in enumerate(centroid):
+        max_val = 0
+        sig_i = sigma(points, label, ci, i)
+
+        for j, cj in enumerate(centroid):
+            if (j == i):
+                continue
+            sig_j = sigma(points, label, cj, j)
+            d = find_distance(ci, cj)
+            kicker = (sig_i + sig_j) / d
+            max_val = max(kicker, max_val)
+
+        running_sum += max_val
+
+    return running_sum / num_clusters
+
 if __name__ == '__main__':
 
-    if len(sys.argv) == 2:
+    if len(sys.argv) > 2:
         if sys.argv[1] == '-one': #random generation of a single creative point cluster...the standard way to run
             #initialize points
             points = init_board(NUM_POINTS)
@@ -182,7 +221,7 @@ if __name__ == '__main__':
             while centroid is None or label is None:
                 num_tries = num_tries + 1
                 try:
-                    centroid, label = kmeans2(points, K_CONST, iter=NUM_ITER, minit='random', missing='raise')
+                    centroid, label = kmeans2(points, K_CONST, iter=NUM_ITER, minit='points', missing='raise')
                 except ClusterError:
                     pass
 
@@ -193,17 +232,18 @@ if __name__ == '__main__':
 
             plot_points2(points, centroid, label)
             print heatmap_data_converter(points, centroid, label)
+            print "Davies-Bouldin Index: " + str(db_index(points, centroid, label) + " (lower values are better)")
 
             # print centers, clusters, num_iter_counter
             # plot_points(centers, clusters)
 
-    elif len(sys.argv) == 3:
-        if sys.argv[1] == '-sim':
+        elif (sys.argv[1] == '-sim') and (len(sys.argv) == 4):
 
             read_file_name = str(sys.argv[2])
+            write_file_name = str(sys.argv[3])
 
             read_file = open(read_file_name, 'r')
-            write_file = open('cluster_data.txt', 'w+')
+            write_file = open(write_file_name, 'w+')
 
             num_lines_read_file = sum(1 for line in read_file)
             read_file.seek(0)
@@ -212,9 +252,14 @@ if __name__ == '__main__':
             total_num_tries = 0
             total_num_clusters = 0
             total_num_points = 0
+            db_running_sum = 0
 
             for idx, line in enumerate(read_file):
                 line_points_data = np.array(eval(line))
+                if (len(line_points_data) < 2):  # don't run kmeans if no points in data
+                    print 'kmeans skipped because not enough data in this creative'
+                    continue
+
                 num_data_points = len(line_points_data)
                 k_to_use = int(ceil(sqrt(num_data_points/2)))
 
@@ -229,11 +274,12 @@ if __name__ == '__main__':
 
                 write_file.write('--------------Creative ' + str(idx) + '--------------\n')
                 write_file.write("Centroid: " + str(centroid) + '\n')
-                write_file.write("Label: " + str(centroid) + '\n')
+                write_file.write("Label: " + str(label) + '\n')
 
                 total_num_tries += num_tries
                 total_num_clusters += k_to_use
                 total_num_points += num_data_points
+                db_running_sum += db_index(line_points_data, centroid, label)
 
                 print ('At creative ' + str(idx) + '/' + str(num_lines_read_file))
                 print ('Elapsed Time: ' + str(default_timer() - tic))
@@ -248,6 +294,7 @@ if __name__ == '__main__':
             stats_file = open('stats_file.txt', 'a')
             stats_file.write('--------------' + str(datetime.datetime.utcnow()) + '---------------\n')
             stats_file.write('Testing statistics for <' + read_file_name + '>\n')
+            stats_file.write('Results file <' + write_file_name + '>\n')
             stats_file.write('Total number of original points: ' + str(total_num_points) + '\n')
             stats_file.write('Total number of original creatives: ' + str(idx) + '\n')
             stats_file.write('Total Elapsed Time: ' + str(toc-tic) + ' seconds \n')
@@ -255,13 +302,13 @@ if __name__ == '__main__':
             stats_file.write('Total number of clusters generated: ' + str(total_num_clusters) + '\n')
             stats_file.write('Maximum number of iterations: ' + str(NUM_ITER) + '\n')
             stats_file.write('minit: ' + str(MINIT) + '\n')
+            stats_file.write('Average Davies-Bouldin Index: ' + str(db_running_sum/num_lines_read_file) + ' (lower is better)\n')
             stats_file.write('\n')
             stats_file.close()
 
-    elif len(sys.argv) == 4:
-        if sys.argv[1] == '-dump':  # file, then number of points to be generated
+        elif sys.argv[1] == '-dump' and (len(sys.argv) == 4):  # file, then number of points to be generated
             dataset_generator(str(sys.argv[2]), int(sys.argv[3]))
     else:
         print '-one: standard single cluster generator.  Will plot points.'
-        print '-sim <data_file_name>: simulates reading data from <data_file_name>, dumping clusters into cluster_data.txt, and appending statistics to stats_file.txt'
+        print '-sim <data_file_name> <write_file_name>: simulates reading data from <data_file_name>, dumping clusters into <write_file_name>, and appending statistics to stats_file.txt'
         print '-dump <data_file_name> <num_points>: generates num_points data and writes into data_file_name'

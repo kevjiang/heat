@@ -40,7 +40,7 @@ def dataset_generator(write_file_name, total_points):
     #append data to creatives list
 
     while points_count < total_points:
-        num_points = randint(2,50)
+        num_points = randint(250000, 250001)
         temp = generate_random_points(0, 420, 0, 280, num_points)
         creatives.append(temp)
         points_count += num_points
@@ -56,4 +56,4 @@ def dataset_generator(write_file_name, total_points):
     #afterwards, write data in creatives, line by line, into clicks_data.txt
 
 if __name__ == '__main__':
-    dataset_generator('clicks_data_small.txt', int(sys.argv[1]))
+    dataset_generator('db_xl.txt', 2000000)
