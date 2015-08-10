@@ -53,5 +53,14 @@ def dataset_generator(write_file_name, total_points):
     clicks_data_file.close()
     #afterwards, write data in creatives, line by line, into clicks_data.txt
 
-if __name__ == '__main__':
+# Converts x,y coordinates from SDK to appropriate pixel coordinates on creative
+def coordinate_converter((x,y), creative_width, creative_height, device_width, device_height, scale):
+    new_x = x + (device_width - creative_width)
+    new_y = y + (device_height - creative_height)
+    return (new_x, new_y)
+
+def main():
     dataset_generator('db_xl.txt', 2000000)
+
+if __name__ == '__main__':
+    main()

@@ -9,8 +9,8 @@ from points import generate_random_points, generate_clustered_points, dataset_ge
 from timeit import default_timer
 import datetime
 
-NUM_POINTS = 4000
-NUM_CLUSTERS = 32
+NUM_POINTS = 2000
+NUM_CLUSTERS = 10
 K_CONST = int(ceil(sqrt(NUM_POINTS/2)))
 # K_CONST = 5
 NUM_ITER = 100
@@ -279,7 +279,7 @@ if __name__ == '__main__':
                 total_num_tries += num_tries
                 total_num_clusters += k_to_use
                 total_num_points += num_data_points
-                db_running_sum += db_index(line_points_data, centroid, label)
+                # db_running_sum += db_index(line_points_data, centroid, label)
 
                 print ('At creative ' + str(idx) + '/' + str(num_lines_read_file))
                 print ('Elapsed Time: ' + str(default_timer() - tic))
